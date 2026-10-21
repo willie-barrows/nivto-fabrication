@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#0b1f3a">
+	<meta name="description" content="Share feedback about the Nivto Fabrication job-cost calculator.">
+	<title>Feedback | Nivto Fabrication</title>
+	<link rel="icon" href="icon.ico" type="image/x-icon">
+	<link rel="stylesheet" href="style.css">
+	<style>
+		.feedback-main {
+			width: min(900px, 92%);
+			margin: 0 auto;
+			padding: 54px 0 70px;
+		}
+
+		.feedback-intro {
+			max-width: 680px;
+			margin-bottom: 30px;
+		}
+
+		.feedback-intro h1 {
+			margin: 0 0 12px;
+			color: var(--navy);
+			font-size: 38px;
+			line-height: 1.15;
+		}
+
+		.feedback-intro p {
+			margin: 0;
+			color: var(--muted);
+			font-size: 16px;
+		}
+
+		.feedback-panel {
+			padding: 30px;
+			background: var(--white);
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			box-shadow: var(--shadow);
+		}
+
+		.feedback-form {
+			display: grid;
+			gap: 22px;
+		}
+
+		.feedback-form .field textarea {
+			min-height: 170px;
+			resize: vertical;
+		}
+
+		.field-label {
+			color: var(--navy);
+			font-size: 12px;
+			font-weight: 700;
+		}
+
+		.rating-options {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 10px;
+		}
+
+		.rating-option {
+			position: relative;
+		}
+
+		.rating-option input {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			opacity: 0;
+		}
+
+		.rating-option label {
+			display: inline-flex;
+			align-items: center;
+			min-height: 42px;
+			padding: 8px 13px;
+			color: var(--text);
+			background: var(--white);
+			border: 1px solid var(--border);
+			border-radius: 7px;
+			cursor: pointer;
+			font-size: 13px;
+		}
+
+		.rating-option input:checked + label {
+			color: var(--navy);
+			background: var(--green-light);
+			border-color: var(--green);
+		}
+
+		.rating-option input:focus-visible + label {
+			outline: 3px solid #70adff;
+			outline-offset: 3px;
+		}
+
+		.feedback-notice {
+			margin: 0;
+			padding: 12px 14px;
+			color: var(--text);
+			background: #f3f6f8;
+			border-left: 3px solid var(--green);
+			font-size: 12px;
+		}
+
+		.recommendation-section {
+			display: grid;
+			gap: 12px;
+			margin-top: 26px;
+			padding-top: 24px;
+			border-top: 1px solid var(--border);
+		}
+
+		.recommendation-section h2 {
+			margin: 0;
+			color: var(--navy);
+			font-size: 18px;
+		}
+
+		.recommendation-section p {
+			margin: 0;
+			color: var(--muted);
+			font-size: 13px;
+		}
+
+		.feedback-status {
+			min-height: 24px;
+			margin: 0;
+			color: var(--green);
+			font-weight: 700;
+		}
+
+		@media (max-width: 650px) {
+			.feedback-main {
+				width: 94%;
+				padding: 38px 0 50px;
+			}
+
+			.feedback-intro h1 {
+				font-size: 32px;
+			}
+
+			.feedback-panel {
+				padding: 19px;
+			}
+
+			.rating-options {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+			}
+		}
+	</style>
+</head>
+<body>
+	<header class="topbar">
+		<a class="brand" href="index.html" aria-label="Nivto Fabrication home">
+			<span class="brand-icon"><img src="icon.ico" alt=""></span>
+			<span>Nivto<span class="brand-light">Fabrication</span></span>
+		</a>
+		<nav class="navigation" aria-label="Main navigation">
+			<a href="index.html#calculator">Calculator</a>
+			<a href="index.html#feedback" aria-current="page">Feedback</a>
+			<a href="index.html#support">Support Us</a>
+		</nav>
+		<span class="beta-badge">FREE BETA</span>
+	</header>
+
+	<main class="feedback-main">
+		<div class="feedback-intro">
+			<span class="eyebrow">HELP US IMPROVE</span>
+			<h1>How is the calculator working for you?</h1>
+			<p>Tell us what helped, what got in the way, or what you would like to see next.</p>
+		</div>
+
+		<section class="feedback-panel" aria-label="Feedback form">
+			<form class="feedback-form" id="feedbackForm">
+				<div class="field">
+					<span class="field-label" id="ratingLabel">How was your experience?</span>
+					<div class="rating-options" role="radiogroup" aria-labelledby="ratingLabel">
+						<span class="rating-option"><input id="ratingGreat" name="rating" type="radio" value="Great"><label for="ratingGreat">Great</label></span>
+						<span class="rating-option"><input id="ratingGood" name="rating" type="radio" value="Good"><label for="ratingGood">Good</label></span>
+						<span class="rating-option"><input id="ratingMixed" name="rating" type="radio" value="Mixed"><label for="ratingMixed">Mixed</label></span>
+						<span class="rating-option"><input id="ratingPoor" name="rating" type="radio" value="Needs work"><label for="ratingPoor">Needs work</label></span>
+					</div>
+				</div>
+
+				<div class="field">
+					<label for="feedbackTopic">What is this about?</label>
+					<select id="feedbackTopic" name="topic">
+						<option value="General feedback">General feedback</option>
+						<option value="Calculation or pricing">Calculation or pricing</option>
+						<option value="Quotation or invoice">Quotation or invoice</option>
+						<option value="Usability or accessibility">Usability or accessibility</option>
+						<option value="Feature request">Feature request</option>
+						<option value="Something went wrong">Something went wrong</option>
+					</select>
+				</div>
+
+				<div class="field">
+					<label for="feedbackMessage">Your feedback <span aria-hidden="true">*</span></label>
+					<textarea id="feedbackMessage" name="message" maxlength="5000" required
+							  placeholder="What were you trying to do? What worked well, or what should change?"></textarea>
+				</div>
+
+				<div class="field">
+					<label for="feedbackEmail">Email address <span style="color:var(--muted);font-weight:400">(optional, if you would like a reply)</span></label>
+					<input id="feedbackEmail" name="email" type="email" maxlength="120"
+						   autocomplete="email" placeholder="you@example.com">
+				</div>
+
+				<p class="feedback-notice">Selecting “Email feedback” opens your email app with the message addressed to info.nivto@gmail.com. Review it and press Send to deliver your feedback.</p>
+				<button class="primary-button" type="submit">Email feedback</button>
+				<p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p>
+
+				<section class="recommendation-section" aria-labelledby="recommendationHeading">
+					<h2 id="recommendationHeading">Recommend Nivto to a friend</h2>
+					<p>Enter their email to prepare a separate message with a link to the calculator.</p>
+					<div class="field">
+						<label for="friendEmail">Friend’s email address</label>
+						<input id="friendEmail" type="email" maxlength="120" autocomplete="off"
+						       placeholder="friend@example.com">
+					</div>
+					<p class="feedback-notice">Your email app will open with the link addressed to your friend. Review it and press Send. Your feedback is not included.</p>
+					<button class="secondary-button" id="recommendButton" type="button">Prepare recommendation email</button>
+					<p class="feedback-status" id="recommendationStatus" role="status" aria-live="polite"></p>
+				</section>
+			</form>
+		</section>
+
+		<p class="trust-note"><a class="text-link" href="index.html">← Back to the calculator</a></p>
+	</main>
+
+	<footer class="footer">
+		<a class="brand footer-brand" href="index.html">
+			<span class="brand-icon"><img src="icon.ico" alt=""></span>
+			<span>Nivto<span class="brand-light">Fabrication</span></span>
+		</a>
+		<p>Built for workshops. Improved through real-world feedback.</p>
+		<span>Free beta · Version 0.1</span>
+	</footer>
+
+	<script>
+		document.getElementById("feedbackForm").addEventListener("submit", function (event) {
+			event.preventDefault();
+			const form = event.currentTarget;
+			if (!form.reportValidity()) return;
+
+			const rating = form.querySelector('input[name="rating"]:checked');
+			const fields = [
+				"Nivto Fabrication feedback",
+				"===========================",
+				"Topic: " + document.getElementById("feedbackTopic").value,
+				"Experience: " + (rating ? rating.value : "Not selected"),
+				"Email: " + (document.getElementById("feedbackEmail").value.trim() || "Not provided"),
+				"",
+				"Feedback:",
+				document.getElementById("feedbackMessage").value.trim()
+			];
+			const subject = encodeURIComponent("Nivto Fabrication feedback: " + document.getElementById("feedbackTopic").value);
+			const body = encodeURIComponent(fields.join("\n"));
+			const link = document.createElement("a");
+			link.href = "mailto:info.nivto@gmail.com?subject=" + subject + "&body=" + body;
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			document.getElementById("feedbackStatus").textContent = "Your email app should open with the feedback addressed to info.nivto@gmail.com. Press Send in the email app to submit it.";
+		});
+
+		document.getElementById("recommendButton").addEventListener("click", function () {
+			const friendEmail = document.getElementById("friendEmail");
+			if (!friendEmail.value.trim()) {
+				friendEmail.setCustomValidity("Enter your friend's email address.");
+				friendEmail.reportValidity();
+				return;
+			}
+			friendEmail.setCustomValidity("");
+			if (!friendEmail.reportValidity()) return;
+
+			const calculatorUrl = new URL("index.html", window.location.href).href;
+			const subject = encodeURIComponent("A fabrication job-cost calculator you might find useful");
+			const body = encodeURIComponent(
+				"Hi,\n\nI thought you might find Nivto Fabrication useful for estimating fabrication job costs and preparing quotations.\n\nTake a look: " + calculatorUrl
+			);
+			const recipient = encodeURIComponent(friendEmail.value.trim()).replace(/%40/gi, "@");
+			const link = document.createElement("a");
+			link.href = "mailto:" + recipient + "?subject=" + subject + "&body=" + body;
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			document.getElementById("recommendationStatus").textContent = "Your email app should open with a recommendation addressed to " + friendEmail.value.trim() + ". Press Send to share the calculator link.";
+		});
+	</script>
+</body>
+</html>
