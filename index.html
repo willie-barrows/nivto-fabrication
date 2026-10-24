@@ -261,8 +261,96 @@
                                 <span class="eyebrow">COST INPUTS</span>
                                 <h3 id="materialsHeading">Materials</h3>
                             </div>
-                            <button class="secondary-button add-row-button" type="button" data-add-row="materials">+ Add material</button>
+                            <div class="material-actions">
+                                <button class="secondary-button add-row-button" id="toggleSketchAnalyzer" type="button" aria-expanded="false" aria-controls="sketchAnalyzer">Sketch analyzer</button>
+                                <button class="secondary-button add-row-button" type="button" data-add-row="materials">+ Add material</button>
+                            </div>
                         </div>
+                        <section class="sketch-analyzer" id="sketchAnalyzer" aria-labelledby="sketchAnalyzerTitle" hidden>
+                            <div class="sketch-analyzer-heading">
+                                <div>
+                                    <span class="eyebrow">DIMENSION-DRIVEN ESTIMATE</span>
+                                    <h4 id="sketchAnalyzerTitle">Sketch a frame and estimate its bill of materials</h4>
+                                </div>
+                                <p>Drawing is a visual reference. Enter dimensions for quantity calculations.</p>
+                            </div>
+                            <div class="drawing-upload">
+                                <div class="drawing-upload-copy">
+                                    <strong>Upload a drawing or model</strong>
+                                    <span>Images, PDF, SVG, and common CAD exchange files. Maximum 25 MB.</span>
+                                </div>
+                                <label class="secondary-button drawing-upload-button" for="drawingFileInput">Choose file</label>
+                                <input id="drawingFileInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff,.svg,.pdf,.dxf,.dwg,.step,.stp,.iges,.igs,.stl,.obj,.3mf,.gltf,.glb" hidden>
+                            </div>
+                            <div class="drawing-file-preview" id="drawingFilePreview" hidden>
+                                <div class="drawing-file-heading">
+                                    <p id="drawingFileStatus" role="status"></p>
+                                    <button class="text-button" id="removeDrawingFile" type="button">Remove file</button>
+                                </div>
+                                <div class="drawing-file-content" id="drawingFileContent"></div>
+                            </div>
+                            <div class="sketch-workspace">
+                                <div class="sketch-pad-wrap">
+                                    <canvas id="sketchCanvas" class="sketch-canvas" width="720" height="380" aria-label="Freehand fabrication sketch pad"></canvas>
+                                    <div class="sketch-pad-actions">
+                                        <span>Draw a quick reference sketch</span>
+                                        <button class="text-button" id="clearSketch" type="button">Clear sketch</button>
+                                    </div>
+                                </div>
+                                <div class="sketch-inputs">
+                                    <div class="form-grid sketch-dimensions">
+                                        <div class="field">
+                                            <label for="sketchWidth">Width (mm)</label>
+                                            <input id="sketchWidth" type="number" min="1" max="50000" step="1" value="1200">
+                                        </div>
+                                        <div class="field">
+                                            <label for="sketchHeight">Height (mm)</label>
+                                            <input id="sketchHeight" type="number" min="1" max="50000" step="1" value="800">
+                                        </div>
+                                        <div class="field">
+                                            <label for="sketchDepth">Depth (mm)</label>
+                                            <input id="sketchDepth" type="number" min="1" max="50000" step="1" value="600">
+                                        </div>
+                                        <div class="field full-width">
+                                            <label for="sketchProfile">Frame material / section</label>
+                                            <input id="sketchProfile" type="text" maxlength="80" value="40 x 40 x 2 mm square tube">
+                                        </div>
+                                        <div class="field">
+                                            <label for="sketchCrossmembers">Crossmembers across width</label>
+                                            <input id="sketchCrossmembers" type="number" min="0" max="100" step="1" value="1">
+                                        </div>
+                                        <div class="field">
+                                            <label for="sketchBoltsPerJoint">Bolts per connection</label>
+                                            <input id="sketchBoltsPerJoint" type="number" min="0" max="100" step="1" value="2">
+                                        </div>
+                                        <label class="sketch-checkbox full-width">
+                                            <input id="includeSketchPanels" type="checkbox">
+                                            Include width x height sheet panels and screws
+                                        </label>
+                                        <div class="field sketch-panel-count" hidden>
+                                            <label for="sketchPanelCount">Panel count</label>
+                                            <input id="sketchPanelCount" type="number" min="1" max="100" step="1" value="1">
+                                        </div>
+                                        <div class="field sketch-screw-spacing" hidden>
+                                            <label for="sketchScrewSpacing">Screw spacing (mm)</label>
+                                            <input id="sketchScrewSpacing" type="number" min="25" max="2000" step="1" value="150">
+                                        </div>
+                                    </div>
+                                    <p class="sketch-estimate-note">Counts are planning estimates for a simple 3D frame, not an engineering drawing or structural specification.</p>
+                                    <button class="primary-button" id="calculateSketchMaterials" type="button">Calculate materials</button>
+                                </div>
+                            </div>
+                            <div class="sketch-proposal" id="sketchProposal" hidden aria-live="polite">
+                                <div class="sketch-proposal-heading">
+                                    <div>
+                                        <h4>Review estimated materials</h4>
+                                        <p>Check the sizes and quantities before adding these items to your quote.</p>
+                                    </div>
+                                    <button class="primary-button" id="confirmSketchMaterials" type="button">Confirm and add to materials</button>
+                                </div>
+                                <ul id="sketchProposalItems" class="sketch-proposal-items"></ul>
+                            </div>
+                        </section>
                         <div class="line-items" id="materialsRows" data-kind="materials"></div>
                     </section>
 

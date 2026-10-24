@@ -9,6 +9,8 @@ const rowContainers = {
     labour: document.getElementById("labourRows"),
     expenses: document.getElementById("expensesRows")
 };
+const sketchProposal = document.getElementById("sketchProposal");
+let proposedSketchMaterials = [];
 
 let lastCalculation = null;
 let rowCounter = 0;
@@ -967,6 +969,225 @@ form.addEventListener("click", function (event) {
         calculate();
     }
 });
+
+const sketchAnalyzerButton = document.getElementById("toggleSketchAnalyzer");
+const sketchAnalyzer = document.getElementById("sketchAnalyzer");
+if (sketchAnalyzerButton && sketchAnalyzer) {
+    sketchAnalyzerButton.addEventListener("click", function () {
+        const isOpening = sketchAnalyzer.hidden;
+        sketchAnalyzer.hidden = !isOpening;
+        sketchAnalyzerButton.setAttribute("aria-expanded", String(isOpening));
+        if (isOpening) sketchAnalyzer.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+}
+
+const drawingFileInput = document.getElementById("drawingFileInput");
+const drawingFilePreview = document.getElementById("drawingFilePreview");
+const drawingFileContent = document.getElementById("drawingFileContent");
+const drawingFileStatus = document.getElementById("drawingFileStatus");
+let drawingFileUrl = null;
+
+function clearDrawingFile() {
+    if (drawingFileUrl) URL.revokeObjectURL(drawingFileUrl);
+    drawingFileUrl = null;
+    drawingFileContent.replaceChildren();
+    drawingFilePreview.hidden = true;
+    drawingFileInput.value = "";
+}
+
+if (drawingFileInput) {
+    drawingFileInput.addEventListener("change", function () {
+        const file = drawingFileInput.files[0];
+        if (!file) return;
+        if (file.size > 25 * 1024 * 1024) {
+            clearDrawingFile();
+            showMessage("Drawing files must be 25 MB or smaller.", true);
+            return;
+        }
+
+        const extension = file.name.split(".").pop().toLowerCase();
+        const imageExtensions = ["png", "jpg", "jpeg", "webp", "gif", "bmp", "tif", "tiff", "svg"];
+        const cadExtensions = ["dxf", "dwg", "step", "stp", "iges", "igs", "stl", "obj", "3mf", "gltf", "glb"];
+        const allowedExtensions = imageExtensions.concat(["pdf"], cadExtensions);
+        if (!allowedExtensions.includes(extension)) {
+            clearDrawingFile();
+            showMessage("Choose a supported image, PDF, or CAD file.", true);
+            return;
+        }
+
+        if (drawingFileUrl) URL.revokeObjectURL(drawingFileUrl);
+        drawingFileUrl = URL.createObjectURL(file);
+        drawingFileContent.replaceChildren();
+        drawingFilePreview.hidden = false;
+        drawingFileStatus.textContent = file.name + " · " + (file.size / (1024 * 1024)).toFixed(2) + " MB";
+
+        if (extension === "pdf") {
+            const preview = document.createElement("iframe");
+            preview.src = drawingFileUrl;
+            preview.title = "Uploaded PDF drawing preview";
+            drawingFileContent.appendChild(preview);
+        } else if (imageExtensions.includes(extension)) {
+            const preview = document.createElement("img");
+            preview.src = drawingFileUrl;
+            preview.alt = "Preview of uploaded drawing: " + file.name;
+            preview.addEventListener("error", function () {
+                drawingFileContent.replaceChildren();
+                const note = document.createElement("p");
+                note.className = "drawing-file-note";
+                note.textContent = "This image format cannot be previewed by this browser. The file is attached as a reference; enter dimensions below.";
+                drawingFileContent.appendChild(note);
+            }, { once: true });
+            drawingFileContent.appendChild(preview);
+        } else {
+            const note = document.createElement("p");
+            note.className = "drawing-file-note";
+            note.textContent = "CAD/model file attached for reference. This browser cannot render or extract dimensions from this format; enter the drawing dimensions below.";
+            drawingFileContent.appendChild(note);
+        }
+        invalidateSketchProposal();
+        showMessage("Drawing loaded as a reference. Verify its dimensions before calculating materials.");
+    });
+}
+
+const removeDrawingFile = document.getElementById("removeDrawingFile");
+if (removeDrawingFile) removeDrawingFile.addEventListener("click", clearDrawingFile);
+
+window.addEventListener("beforeunload", function () {
+    if (drawingFileUrl) URL.revokeObjectURL(drawingFileUrl);
+});
+
+const sketchCanvas = document.getElementById("sketchCanvas");
+if (sketchCanvas) {
+    const sketchContext = sketchCanvas.getContext("2d");
+    let sketching = false;
+
+    function sketchPoint(event) {
+        const bounds = sketchCanvas.getBoundingClientRect();
+        return {
+            x: (event.clientX - bounds.left) * sketchCanvas.width / bounds.width,
+            y: (event.clientY - bounds.top) * sketchCanvas.height / bounds.height
+        };
+    }
+
+    sketchCanvas.addEventListener("pointerdown", function (event) {
+        sketching = true;
+        sketchCanvas.setPointerCapture(event.pointerId);
+        const point = sketchPoint(event);
+        sketchContext.beginPath();
+        sketchContext.moveTo(point.x, point.y);
+    });
+    sketchCanvas.addEventListener("pointermove", function (event) {
+        if (!sketching) return;
+        const point = sketchPoint(event);
+        sketchContext.lineWidth = 3;
+        sketchContext.lineCap = "round";
+        sketchContext.strokeStyle = "#145c49";
+        sketchContext.lineTo(point.x, point.y);
+        sketchContext.stroke();
+    });
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach(function (eventName) {
+        sketchCanvas.addEventListener(eventName, function () { sketching = false; });
+    });
+
+    document.getElementById("clearSketch").addEventListener("click", function () {
+        sketchContext.clearRect(0, 0, sketchCanvas.width, sketchCanvas.height);
+    });
+}
+
+const includeSketchPanels = document.getElementById("includeSketchPanels");
+if (includeSketchPanels) {
+    includeSketchPanels.addEventListener("change", function () {
+        document.querySelectorAll(".sketch-panel-count, .sketch-screw-spacing").forEach(function (field) {
+            field.hidden = !includeSketchPanels.checked;
+        });
+        sketchProposal.hidden = true;
+    });
+}
+
+const calculateSketchMaterials = document.getElementById("calculateSketchMaterials");
+const sketchInputIds = [
+    "sketchWidth", "sketchHeight", "sketchDepth", "sketchProfile", "sketchCrossmembers",
+    "sketchBoltsPerJoint", "includeSketchPanels", "sketchPanelCount", "sketchScrewSpacing"
+];
+sketchInputIds.forEach(function (id) {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener("input", invalidateSketchProposal);
+    input.addEventListener("change", invalidateSketchProposal);
+});
+
+function invalidateSketchProposal() {
+    proposedSketchMaterials = [];
+    if (sketchProposal) sketchProposal.hidden = true;
+}
+
+if (calculateSketchMaterials) {
+    calculateSketchMaterials.addEventListener("click", function () {
+        const width = numberValue("sketchWidth");
+        const height = numberValue("sketchHeight");
+        const depth = numberValue("sketchDepth");
+        const crossmembers = numberValue("sketchCrossmembers");
+        const boltsPerJoint = numberValue("sketchBoltsPerJoint");
+        const profile = document.getElementById("sketchProfile").value.trim();
+        const countInputs = [crossmembers, boltsPerJoint];
+        if ([width, height, depth].some(value => !Number.isInteger(value) || value < 1 || value > 50000) ||
+            countInputs.some(value => !Number.isInteger(value) || value < 0 || value > 100) || !profile) {
+            showMessage("Enter positive dimensions, whole-number connection counts, and a frame material.", true);
+            return;
+        }
+
+        const frameLength = (4 * (width + height + depth) + crossmembers * width) / 1000;
+        const connectionCount = 8 + crossmembers * 2;
+        const proposed = [
+            { description: profile, dimensions: "3D frame; " + width + " x " + height + " x " + depth + " mm", quantity: Number(frameLength.toFixed(2)), unit: "m", rate: 0 },
+            { description: "Bolts and nuts", dimensions: "Allow " + boltsPerJoint + " per connection; " + connectionCount + " connections", quantity: connectionCount * boltsPerJoint, unit: "each", rate: 0 }
+        ];
+
+        if (includeSketchPanels.checked) {
+            const panelCount = numberValue("sketchPanelCount");
+            const screwSpacing = numberValue("sketchScrewSpacing");
+            if (!Number.isInteger(panelCount) || panelCount < 1 || panelCount > 100 ||
+                !Number.isFinite(screwSpacing) || screwSpacing < 25 || screwSpacing > 2000) {
+                showMessage("Enter a panel count from 1 to 100 and screw spacing from 25 to 2000 mm.", true);
+                return;
+            }
+            const panelArea = width * height / 1000000;
+            const screwsPerPanel = Math.ceil((2 * (width + height)) / screwSpacing);
+            proposed.push(
+                { description: "Sheet panel", dimensions: width + " x " + height + " mm", quantity: Number((panelArea * panelCount).toFixed(2)), unit: "m2", rate: 0 },
+                { description: "Panel screws", dimensions: "Approx. " + screwSpacing + " mm edge spacing", quantity: screwsPerPanel * panelCount, unit: "each", rate: 0 }
+            );
+        }
+
+        proposedSketchMaterials = proposed;
+        const list = document.getElementById("sketchProposalItems");
+        list.replaceChildren();
+        proposed.forEach(function (item) {
+            const row = document.createElement("li");
+            const name = document.createElement("span");
+            const quantity = document.createElement("strong");
+            name.textContent = item.description + " | " + item.dimensions;
+            quantity.textContent = item.quantity + " " + item.unit;
+            row.append(name, quantity);
+            list.appendChild(row);
+        });
+        sketchProposal.hidden = false;
+        showMessage("Estimate ready. Review the material quantities, then confirm to add them.");
+    });
+}
+
+const confirmSketchMaterials = document.getElementById("confirmSketchMaterials");
+if (confirmSketchMaterials) {
+    confirmSketchMaterials.addEventListener("click", function () {
+        if (!proposedSketchMaterials.length) return;
+        proposedSketchMaterials.forEach(function (item) { addLineItem("materials", item); });
+        proposedSketchMaterials = [];
+        sketchProposal.hidden = true;
+        calculate();
+        showMessage("Confirmed estimate added to your materials. Add unit prices to include it in the quote.");
+        rowContainers.materials.lastElementChild.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+}
 
 form.addEventListener("input", function (event) {
     if (event.isTrusted) importedQuoteDate = null;
