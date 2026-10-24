@@ -289,6 +289,32 @@
                                 </div>
                                 <div class="drawing-file-content" id="drawingFileContent"></div>
                             </div>
+                            <section class="estimator-assistant" aria-labelledby="estimatorAssistantTitle">
+                                <div class="assistant-heading">
+                                    <span class="assistant-mark" aria-hidden="true">N</span>
+                                    <div>
+                                        <div class="assistant-title-line">
+                                            <h4 id="estimatorAssistantTitle">Estimator assistant</h4>
+                                            <span class="assistant-mode">LOCAL GUIDE</span>
+                                        </div>
+                                        <p>Get help checking dimensions, assumptions, and fastener allowances.</p>
+                                    </div>
+                                </div>
+                                <div class="assistant-thread" id="assistantThread" role="log" aria-live="polite" aria-relevant="additions">
+                                    <p class="assistant-message assistant-response">I can help review your inputs and explain the estimate. Uploaded drawings are not visually analyzed by an AI model in this version.</p>
+                                </div>
+                                <div class="assistant-prompts" aria-label="Suggested assistant questions">
+                                    <button class="assistant-prompt" type="button" data-assistant-prompt="Review my setup">Review my setup</button>
+                                    <button class="assistant-prompt" type="button" data-assistant-prompt="Check fasteners">Check fasteners</button>
+                                    <button class="assistant-prompt" type="button" data-assistant-prompt="What should I verify?">What should I verify?</button>
+                                </div>
+                                <div class="assistant-input-row" id="assistantInputRow">
+                                    <label class="visually-hidden" for="assistantQuestion">Ask the estimator assistant</label>
+                                    <input id="assistantQuestion" type="text" maxlength="240" placeholder="Ask about your estimate..." autocomplete="off">
+                                    <button class="primary-button" id="sendAssistantQuestion" type="button" aria-label="Send question">Send</button>
+                                </div>
+                                <p class="assistant-disclosure">Local guidance only. Confirm drawing details and structural fastener choices with your workshop specifications.</p>
+                            </section>
                             <div class="sketch-workspace">
                                 <div class="sketch-pad-wrap">
                                     <canvas id="sketchCanvas" class="sketch-canvas" width="720" height="380" aria-label="Freehand fabrication sketch pad"></canvas>

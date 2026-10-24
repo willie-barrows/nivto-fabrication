@@ -1052,6 +1052,105 @@ if (drawingFileInput) {
 const removeDrawingFile = document.getElementById("removeDrawingFile");
 if (removeDrawingFile) removeDrawingFile.addEventListener("click", clearDrawingFile);
 
+const assistantQuestion = document.getElementById("assistantQuestion");
+const assistantThread = document.getElementById("assistantThread");
+
+function assistantContext() {
+    const width = numberValue("sketchWidth");
+    const height = numberValue("sketchHeight");
+    const depth = numberValue("sketchDepth");
+    const crossmembers = numberValue("sketchCrossmembers");
+    const boltsPerJoint = numberValue("sketchBoltsPerJoint");
+    const profile = document.getElementById("sketchProfile").value.trim();
+    const uploadedName = drawingFileInput.files[0] ? drawingFileInput.files[0].name : "";
+    const uploadedType = uploadedName ? uploadedName.split(".").pop().toUpperCase() : "none";
+    return { width, height, depth, crossmembers, boltsPerJoint, profile, uploadedName, uploadedType };
+}
+
+function assistantReply(question) {
+    const context = assistantContext();
+    const dimensionsValid = [context.width, context.height, context.depth].every(value =>
+        Number.isInteger(value) && value > 0 && value <= 50000
+    );
+    const connectionCount = 8 + (Number.isInteger(context.crossmembers) ? context.crossmembers * 2 : 0);
+    const boltCount = connectionCount * (Number.isInteger(context.boltsPerJoint) ? context.boltsPerJoint : 0);
+    const normalizedQuestion = question.toLowerCase();
+
+    if (/fastener|bolt|screw|fixing/.test(normalizedQuestion)) {
+        return "Current allowance: " + connectionCount + " assumed frame connections x " + context.boltsPerJoint +
+            " bolts = " + boltCount + " bolts and nuts. " +
+            (document.getElementById("includeSketchPanels").checked
+                ? "Panel screws are estimated around the panel perimeter from the spacing you entered. Verify actual joint and edge details before ordering."
+                : "Panel screws are not included. Turn on sheet panels to estimate perimeter screws. Verify actual joint details before ordering.");
+    }
+
+    if (/review|setup|estimate|summary/.test(normalizedQuestion)) {
+        const sizeSummary = dimensionsValid
+            ? context.width + " x " + context.height + " x " + context.depth + " mm"
+            : "dimensions need valid positive whole numbers in millimetres";
+        const frameLength = dimensionsValid && Number.isInteger(context.crossmembers) && context.crossmembers >= 0
+            ? ((4 * (context.width + context.height + context.depth) + context.crossmembers * context.width) / 1000).toFixed(2) + " m"
+            : "not available until dimensions and crossmembers are valid";
+        return "Setup review: " + sizeSummary + "; profile: " + (context.profile || "not specified") +
+            "; crossmembers: " + context.crossmembers + ". The current frame rule estimates " + frameLength +
+            " and " + boltCount + " bolts/nuts. " +
+            (context.uploadedName
+                ? "Reference file: " + context.uploadedName + " (" + context.uploadedType + "). It is not visually interpreted here."
+                : "No drawing file is attached. Add one as a visual reference if useful.");
+    }
+
+    if (/verify|check|missing|next|dimension|drawing|file|upload/.test(normalizedQuestion)) {
+        return "Before calculating, verify the overall width, height, and depth; the profile and wall thickness; how many crossmembers the frame actually has; and the real connection type and fasteners. " +
+            (context.uploadedName
+                ? "Your " + context.uploadedType + " file is available as a reference, but this local guide cannot read dimensions or detect parts from it."
+                : "You can upload an image or PDF for preview, or enter dimensions from your drawing.");
+    }
+
+    return "I can help review your setup, check the bolt and screw allowance, or list what to verify. Try one of the suggested questions. I use the values entered here and do not interpret drawing geometry.";
+}
+
+function sendAssistantMessage(question) {
+    const cleanedQuestion = question.trim();
+    if (!cleanedQuestion) return;
+
+    const userMessage = document.createElement("p");
+    userMessage.className = "assistant-message assistant-question";
+    userMessage.textContent = cleanedQuestion;
+    const response = document.createElement("p");
+    response.className = "assistant-message assistant-response";
+    response.textContent = assistantReply(cleanedQuestion);
+    assistantThread.append(userMessage, response);
+    assistantThread.scrollTop = assistantThread.scrollHeight;
+}
+
+function submitAssistantQuestion() {
+    if (assistantQuestion) {
+        sendAssistantMessage(assistantQuestion.value);
+        assistantQuestion.value = "";
+        assistantQuestion.focus();
+    }
+}
+
+const sendAssistantQuestionButton = document.getElementById("sendAssistantQuestion");
+if (sendAssistantQuestionButton) {
+    sendAssistantQuestionButton.addEventListener("click", submitAssistantQuestion);
+}
+
+if (assistantQuestion) {
+    assistantQuestion.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            submitAssistantQuestion();
+        }
+    });
+}
+
+document.querySelectorAll("[data-assistant-prompt]").forEach(function (button) {
+    button.addEventListener("click", function () {
+        sendAssistantMessage(button.dataset.assistantPrompt);
+    });
+});
+
 window.addEventListener("beforeunload", function () {
     if (drawingFileUrl) URL.revokeObjectURL(drawingFileUrl);
 });
