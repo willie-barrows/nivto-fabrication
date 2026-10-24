@@ -115,6 +115,16 @@
                                    placeholder="Your company name" autocomplete="organization">
                         </div>
 
+                        <div class="field full-width logo-upload-field">
+                            <label for="companyLogoInput">Company logo</label>
+                            <div class="logo-upload-control">
+                                <input id="companyLogoInput" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp">
+                                <button class="text-button" id="removeCompanyLogo" type="button" hidden>Remove logo</button>
+                            </div>
+                            <img id="companyLogoPreview" class="company-logo-preview" alt="Company logo preview" hidden>
+                            <span class="field-help">PNG, JPG, or WebP, up to 5 MB. Logo is resized and stored in this browser.</span>
+                        </div>
+
                         <div class="field">
                             <label for="companyEmail">Company email</label>
                             <input id="companyEmail" type="email" maxlength="120"

@@ -476,6 +476,42 @@ main {
     color: #9aa8b9;
 }
 
+.logo-upload-control {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.logo-upload-control input {
+    min-width: 0;
+    max-width: 100%;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.company-logo-preview {
+    display: block;
+    width: min(240px, 100%);
+    height: 100px;
+    padding: 8px;
+    object-fit: contain;
+    object-position: left center;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+}
+
+.company-logo-preview[hidden],
+.logo-upload-control [hidden] {
+    display: none;
+}
+
+.field-help {
+    color: var(--muted);
+    font-size: 11px;
+}
+
 .form-actions {
     display: flex;
     flex-wrap: wrap;

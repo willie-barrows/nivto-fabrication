@@ -116,6 +116,10 @@ const companyFieldIds = [
     "companyBankName", "companyAccountName", "companyAccountNumber", "companyBranchCode", "companyPaymentReference",
     "invoiceTaxRate", "invoiceDueDays"
 ];
+const companyLogoInput = document.getElementById("companyLogoInput");
+const companyLogoPreview = document.getElementById("companyLogoPreview");
+const removeCompanyLogoButton = document.getElementById("removeCompanyLogo");
+let companyLogoDataUrl = "";
 const quoteFormFieldIds = [
     "jobReference", "customerName", "customerCompany", "customerEmail", "customerPhone", "customerAddress",
     "currency", "quoteValidity", "jobDescription", "wastePercent", "overheadPercent", "markupPercent"
@@ -355,7 +359,8 @@ function calculate() {
             accountName: document.getElementById("companyAccountName").value.trim(),
             accountNumber: document.getElementById("companyAccountNumber").value.trim(),
             branchCode: document.getElementById("companyBranchCode").value.trim(),
-            paymentReference: document.getElementById("companyPaymentReference").value.trim()
+            paymentReference: document.getElementById("companyPaymentReference").value.trim(),
+            logoDataUrl: companyLogoDataUrl
         },
         invoiceTaxRate,
         invoiceDueDays,
@@ -545,6 +550,11 @@ function validateQuoteFile(quoteFile) {
         throw new Error("This is not a supported Nivto Fabrication quote file.");
     }
 
+    if (quoteFile.company && quoteFile.company.logoDataUrl !== undefined &&
+        !isValidLogoDataUrl(quoteFile.company.logoDataUrl)) {
+        throw new Error("The quote file contains an invalid company logo.");
+    }
+
     const validCurrencies = ["ZAR", "USD", "GBP", "EUR", "AUD"];
     if (!validCurrencies.includes(quoteFile.form.currency)) {
         throw new Error("The quote file contains an unsupported currency.");
@@ -566,8 +576,8 @@ function validateQuoteFile(quoteFile) {
 
 function loadQuoteFile(file) {
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-        showMessage("Quote files must be smaller than 2 MB.", true);
+    if (file.size > 4 * 1024 * 1024) {
+        showMessage("Quote files must be smaller than 4 MB.", true);
         return;
     }
 
@@ -600,6 +610,7 @@ function loadQuoteFile(file) {
                 document.getElementById(id).value = String(companyValues[id]);
             }
         });
+        setCompanyLogo(company.logoDataUrl || "");
         syncBusinessTypeChecks();
         Object.keys(rowContainers).forEach(refreshSuggestions);
         saveCompanyProfile();
@@ -659,17 +670,19 @@ function createInvoice() {
 
     const style = doc.createElement("style");
     style.textContent =
-        "@page{size:A4;margin:16mm}body{font-family:Arial,sans-serif;max-width:900px;margin:35px auto;padding:20px;color:#222}" +
-        "h1{margin:0;color:#102944}h2{margin:26px 0 8px;font-size:16px}p{margin:5px 0}.invoice-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}" +
-        ".invoice-number{font-weight:bold;text-align:right}.columns{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin:25px 0}.label{color:#667085;font-size:12px;text-transform:uppercase}" +
-        "table{width:100%;border-collapse:collapse;margin-top:22px}th,td{text-align:left;padding:12px;border-bottom:1px solid #ddd}th:last-child,td:last-child{text-align:right}" +
-        ".totals{width:min(100%,420px);margin:18px 0 0 auto}.grand-total{font-weight:bold;font-size:1.15em}.payment{margin-top:28px;padding:16px;background:#f3f6f8}.brand-footnote{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:34px;padding-top:8px;border-top:1px solid #ddd;color:#777;font-size:10px}.brand-footnote img{width:18px;height:18px;object-fit:contain}" +
+        "@page{size:A4;margin:12mm}body{font-family:Arial,sans-serif;max-width:860px;margin:18px auto;padding:10px;color:#222;font-size:13px;line-height:1.45}" +
+        "h1{margin:0;color:#102944;font-size:23px}h2{margin:18px 0 6px;font-size:15px}p{margin:3px 0}.invoice-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-bottom:12px;border-bottom:2px solid #102944}" +
+        ".invoice-number{font-weight:bold;text-align:right}.invoice-logo{display:block;max-width:150px;max-height:64px;object-fit:contain;object-position:left center;margin:0 0 7px}.columns{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:15px 0}.label{color:#667085;font-size:10px;text-transform:uppercase}" +
+        "table{width:100%;border-collapse:collapse;margin-top:12px}th,td{text-align:left;padding:7px 9px;border-bottom:1px solid #ddd}th:last-child,td:last-child{text-align:right}" +
+        ".totals{width:min(100%,370px);margin:12px 0 0 auto}.grand-total{font-weight:bold;font-size:1.08em}.payment{margin-top:18px;padding:11px 13px;background:#f3f6f8}.brand-footnote{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:22px;padding-top:7px;border-top:1px solid #ddd;color:#777;font-size:9px}.brand-footnote img{width:16px;height:16px;object-fit:contain}" +
         "@media print{body{max-width:none;margin:0;padding:0}h1,h2{break-after:avoid}tr{break-inside:avoid}}";
     doc.head.appendChild(style);
 
     const header = doc.createElement("div");
     header.className = "invoice-heading";
     const companyBlock = doc.createElement("div");
+    const invoiceLogo = createCompanyLogoElement(doc, data.company, "invoice-logo");
+    if (invoiceLogo) companyBlock.appendChild(invoiceLogo);
     const companyHeading = doc.createElement("h1");
     companyHeading.textContent = data.company.name || "Invoice";
     companyBlock.appendChild(companyHeading);
@@ -800,24 +813,31 @@ function printReport() {
 
     const style = doc.createElement("style");
     style.textContent =
-        "@page{size:A4;margin:16mm}" +
-        "body{font-family:Arial,sans-serif;max-width:900px;margin:35px auto;padding:20px;color:#222}" +
-        "h1{margin-bottom:5px;color:#102944}h2{margin:28px 0 8px;font-size:16px}h3{margin:20px 0 5px;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:12px}" +
-        "th,td{text-align:left;padding:12px;border-bottom:1px solid #ddd}" +
+        "@page{size:A4;margin:12mm}" +
+        "body{font-family:Arial,sans-serif;max-width:860px;margin:18px auto;padding:10px;color:#222;font-size:13px;line-height:1.45}" +
+        "h1{margin:0;color:#102944;font-size:23px}.quote-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-bottom:11px;border-bottom:2px solid #102944}.quote-brand{display:flex;align-items:center;gap:14px;min-width:0}.quote-logo{display:block;flex:0 0 auto;max-width:150px;max-height:64px;object-fit:contain;object-position:left center}.quote-type{color:#667085;font-size:11px;font-weight:bold;letter-spacing:.08em}h2{margin:17px 0 6px;font-size:15px}h3{margin:14px 0 4px;font-size:12px}table{width:100%;border-collapse:collapse;margin-top:9px}" +
+        "th,td{text-align:left;padding:7px 9px;border-bottom:1px solid #ddd}" +
         "th:last-child,td:last-child{text-align:right}" +
-        ".total{font-weight:bold;font-size:1.1em}.quote-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}.issuer-details p,.customer-details p{margin:3px 0}" +
-        ".note{margin-top:25px;color:#555;font-size:13px}.brand-footnote{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:32px;padding-top:8px;border-top:1px solid #ddd;color:#777;font-size:10px}.brand-footnote img{width:18px;height:18px;object-fit:contain}" +
+        ".total{font-weight:bold;font-size:1.08em}.quote-meta{display:grid;grid-template-columns:1fr 1fr;gap:2px 20px;margin-top:12px}.issuer-details p,.customer-details p{margin:2px 0}" +
+        ".note{margin-top:17px;color:#555;font-size:12px}.brand-footnote{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:20px;padding-top:7px;border-top:1px solid #ddd;color:#777;font-size:9px}.brand-footnote img{width:16px;height:16px;object-fit:contain}" +
         "@media print{body{max-width:none;margin:0;padding:0}.no-print{display:none}h1,h2,h3{break-after:avoid}tr{break-inside:avoid}table{break-inside:auto}}";
 
     doc.head.appendChild(style);
 
-    const heading = doc.createElement("h1");
-    heading.textContent = data.company.name || "Fabrication Quotation";
-    doc.body.appendChild(heading);
-
-    const subtitle = doc.createElement("p");
+    const quotationLogo = createCompanyLogoElement(doc, data.company, "quote-logo");
+    const heading = doc.createElement("div");
+    heading.className = "quote-heading";
+    const brand = doc.createElement("div");
+    brand.className = "quote-brand";
+    if (quotationLogo) brand.appendChild(quotationLogo);
+    const companyHeading = doc.createElement("h1");
+    companyHeading.textContent = data.company.name || "Fabrication";
+    brand.appendChild(companyHeading);
+    const subtitle = doc.createElement("span");
+    subtitle.className = "quote-type";
     subtitle.textContent = "QUOTATION";
-    doc.body.appendChild(subtitle);
+    heading.append(brand, subtitle);
+    doc.body.appendChild(heading);
 
     const issuerDetails = doc.createElement("div");
     issuerDetails.className = "issuer-details";
@@ -1324,16 +1344,43 @@ function loadCompanyProfile() {
     }
 }
 
+function isValidLogoDataUrl(value) {
+    return typeof value === "string" && value.length <= 1400000 &&
+        /^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/]+={0,2}$/.test(value);
+}
+
+function setCompanyLogo(dataUrl) {
+    companyLogoDataUrl = isValidLogoDataUrl(dataUrl) ? dataUrl : "";
+    if (companyLogoPreview) {
+        companyLogoPreview.src = companyLogoDataUrl;
+        companyLogoPreview.hidden = !companyLogoDataUrl;
+    }
+    if (removeCompanyLogoButton) removeCompanyLogoButton.hidden = !companyLogoDataUrl;
+}
+
+function createCompanyLogoElement(doc, company, className) {
+    if (!company || !isValidLogoDataUrl(company.logoDataUrl)) return null;
+    const image = doc.createElement("img");
+    image.className = className;
+    image.src = company.logoDataUrl;
+    image.alt = (company.name || "Company") + " logo";
+    return image;
+}
+
 function applyCompanyProfile(profile) {
     companyFieldIds.forEach(function (id) {
         const field = document.getElementById(id);
         if (field && typeof profile[id] === "string") field.value = profile[id];
     });
+    setCompanyLogo(profile.logoDataUrl || "");
     syncBusinessTypeChecks();
 }
 
 function readCompanyProfile() {
-    return Object.fromEntries(companyFieldIds.map(id => [id, document.getElementById(id).value]));
+    return Object.assign(
+        Object.fromEntries(companyFieldIds.map(id => [id, document.getElementById(id).value])),
+        { logoDataUrl: companyLogoDataUrl }
+    );
 }
 
 function saveCompanyProfile() {
@@ -1367,8 +1414,8 @@ function saveCompanyProfileFile() {
 
 function loadCompanyProfileFile(file) {
     if (!file) return;
-    if (file.size > 256 * 1024) {
-        showMessage("Company profile files must be smaller than 256 KB.", true);
+    if (file.size > 2 * 1024 * 1024) {
+        showMessage("Company profile files must be smaller than 2 MB.", true);
         return;
     }
 
@@ -1385,14 +1432,75 @@ function loadCompanyProfileFile(file) {
                 throw new Error("The company profile contains an invalid value.");
             }
         });
-        applyCompanyProfile(Object.fromEntries(companyFieldIds.map(function (id) {
-            const value = profileFile.profile[id];
-            return [id, value === undefined ? "" : String(value)];
-        })));
+        if (profileFile.profile.logoDataUrl !== undefined &&
+            !isValidLogoDataUrl(profileFile.profile.logoDataUrl)) {
+            throw new Error("The company profile contains an invalid logo.");
+        }
+        applyCompanyProfile(Object.assign(
+            Object.fromEntries(companyFieldIds.map(function (id) {
+                const value = profileFile.profile[id];
+                return [id, value === undefined ? "" : String(value)];
+            })),
+            { logoDataUrl: profileFile.profile.logoDataUrl || "" }
+        ));
         saveCompanyProfile();
         showMessage("Company profile loaded and saved in this browser.");
     }).catch(function (error) {
         showMessage(error.message || "Could not read this company profile file.", true);
+    });
+}
+
+if (companyLogoInput) {
+    companyLogoInput.addEventListener("change", function () {
+        const file = companyLogoInput.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024 || !["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+            companyLogoInput.value = "";
+            showMessage("Choose a PNG, JPG, or WebP logo smaller than 5 MB.", true);
+            return;
+        }
+
+        const imageUrl = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = function () {
+            const scale = Math.min(1, 600 / image.naturalWidth, 300 / image.naturalHeight);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+            const context = canvas.getContext("2d");
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            let logoDataUrl = canvas.toDataURL("image/png");
+            if (logoDataUrl.length > 1400000) {
+                context.fillStyle = "#ffffff";
+                context.globalCompositeOperation = "destination-over";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                logoDataUrl = canvas.toDataURL("image/jpeg", 0.86);
+            }
+            URL.revokeObjectURL(imageUrl);
+            if (!isValidLogoDataUrl(logoDataUrl)) {
+                companyLogoInput.value = "";
+                showMessage("This logo could not be compressed to a size that can be saved. Try a smaller or simpler image.", true);
+                return;
+            }
+            setCompanyLogo(logoDataUrl);
+            saveCompanyProfile();
+            showMessage("Company logo saved in this browser and added to future quotations and invoices.");
+        };
+        image.onerror = function () {
+            URL.revokeObjectURL(imageUrl);
+            companyLogoInput.value = "";
+            showMessage("The selected logo image could not be read.", true);
+        };
+        image.src = imageUrl;
+    });
+}
+
+if (removeCompanyLogoButton) {
+    removeCompanyLogoButton.addEventListener("click", function () {
+        setCompanyLogo("");
+        if (companyLogoInput) companyLogoInput.value = "";
+        saveCompanyProfile();
+        showMessage("Company logo removed. New quotations and invoices will not include it.");
     });
 }
 
@@ -1528,6 +1636,7 @@ if (resetAllButton) {
         localStorage.removeItem(companyStorageKey);
         localStorage.removeItem(suggestionStorageKey);
         form.reset();
+        setCompanyLogo("");
         Object.keys(rowContainers).forEach(function (kind) {
             rowContainers[kind].replaceChildren();
             addLineItem(kind);
